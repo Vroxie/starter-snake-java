@@ -202,11 +202,11 @@ public class Snake {
 
 
             Direction finalDirection = null;
-            if (!availableDirections.isEmpty()) {
+            //if (!availableDirections.isEmpty()) {
                 finalDirection = availableDirections.get(new Random().nextInt(availableDirections.size()));
-            } else {
-                finalDirection = Direction.values()[new Random().nextInt(Direction.values().length)];
-            }
+            //} else {
+                //finalDirection = Direction.values()[new Random().nextInt(Direction.values().length)];
+            //}
 
 
 
