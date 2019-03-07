@@ -13,4 +13,13 @@ public enum Direction {
         this.stringDirection = stringDirection;
         this.vec = vec;
     }
+    
+    public static Direction fromVector(Vector v) {
+        for (Direction dir : values()) {
+            if (dir.vec.equals(v)) {
+                return dir;
+            }
+        }
+        return LEFT;
+    }
 }

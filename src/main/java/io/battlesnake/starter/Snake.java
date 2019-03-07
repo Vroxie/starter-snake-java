@@ -116,19 +116,35 @@ public class Snake {
          * @return a response back to the engine containing snake movement values.
          */
         public Map<String, String> move(JsonNode moveRequest) {
-            System.out.println(moveRequest);
-            JsonNode food = moveRequest.get("food");
             List<Food> foods = new ArrayList<>();
+            World world = new World(moveRequest.get("width").asInt(), moveRequest.get("height").asInt());
+
+            JsonNode food = moveRequest.get("food");
             for(JsonNode a : food.get("data")){
                 foods.add(new Food(a.get("x").asInt(), a.get("y").asInt()));
             }
 
-            World world = new World(moveRequest.get("width").asInt(), moveRequest.get("height").asInt());
+            JsonNode snakes = moveRequest.get("snakes");
+            for(JsonNode a : snakes.get("data")) {
+                world.addSnake(decodeSnake(a));
+            }
 
             Orm ourSnake = decodeSnake(moveRequest.get("you"));
             world.addSnake(ourSnake);
 
             Vector head = ourSnake.getHead();
+
+            Food clostestFood = null;
+            double prevClosestDist = Double.MAX_VALUE;
+            for (Food f : foods) {
+                int dx = head.getX() - f.getX();
+                int dy = head.getY() - f.getY();
+                double distance = Math.sqrt(dx * dx + dy * dy);
+                if (prevClosestDist > distance) {
+                    clostestFood = f;
+                    prevClosestDist = distance;
+                }
+            }
 
             List<Direction> availableDirections = new ArrayList<>();
             availableDirections.add(Direction.DOWN);
@@ -150,22 +166,36 @@ public class Snake {
             }
 
             List <Direction> avaiblecopy = new ArrayList<>(availableDirections);
-
-
-
             for (Direction dir : avaiblecopy) {
+
+                boolean foodInDirection = false;
+                if (clostestFood != null) {
+                    int dx = (int)Math.signum(clostestFood.getX() - head.getX());
+                    int dy = (int)Math.signum(clostestFood.getY() - head.getY());
+
+                    if (dir.equals(Direction.LEFT) && dx == -1 ||
+                            dir.equals(Direction.RIGHT) && dx == 1 ||
+                            dir.equals(Direction.UP) && dy == -1 ||
+                            dir.equals(Direction.DOWN) && dy == 1) {
+                        foodInDirection = true;
+                    }
+                }
+
+
                 Vector checkifnotObs = new Vector((head.getX() + dir.vec.getX()),(head.getY()) + dir.vec.getY());
-                if (world.isObstacle(checkifnotObs)) {
+                boolean obstacleInDirection = world.isObstacle(checkifnotObs);
+
+                if (obstacleInDirection || (clostestFood != null && !foodInDirection)) {
                     availableDirections.remove(dir);
                 }
 
             }
 
-
+            Direction finalDirection = availableDirections.get(new Random().nextInt(availableDirections.size()));
 
             Map<String, String> response = new HashMap<>();
-            Random rand = new Random();
-            response.put("move", availableDirections.get(rand.nextInt(availableDirections.size())).stringDirection);
+
+            response.put("move", finalDirection.stringDirection);
             return response;
         }
 
