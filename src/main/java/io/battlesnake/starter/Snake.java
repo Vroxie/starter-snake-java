@@ -7,8 +7,7 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static spark.Spark.port;
 import static spark.Spark.post;
@@ -92,7 +91,6 @@ public class Snake {
          * /ping is called by the play application during the tournament or on play.battlesnake.io to make sure your
          * snake is still alive.
          *
-         * @param pingRequest a map containing the JSON sent to this snake. See the spec for details of what this contains.
          * @return an empty response.
          */
         public Map<String, String> ping() {
@@ -118,10 +116,67 @@ public class Snake {
          * @return a response back to the engine containing snake movement values.
          */
         public Map<String, String> move(JsonNode moveRequest) {
+            System.out.println(moveRequest);
+            JsonNode food = moveRequest.get("food");
+            List<Food> foods = new ArrayList<>();
+            for(JsonNode a : food.get("data")){
+                foods.add(new Food(a.get("x").asInt(), a.get("y").asInt()));
+            }
+
+            World world = new World(moveRequest.get("width").asInt(), moveRequest.get("height").asInt());
+
+            Orm ourSnake = decodeSnake(moveRequest.get("you"));
+            world.addSnake(ourSnake);
+
+            Vector head = ourSnake.getHead();
+
+            List<Direction> availableDirections = new ArrayList<>();
+            availableDirections.add(Direction.DOWN);
+            availableDirections.add(Direction.UP);
+            availableDirections.add(Direction.LEFT);
+            availableDirections.add(Direction.RIGHT);
+
+            if (head.getX() == 0) {
+                availableDirections.remove(Direction.LEFT);
+            }
+            if (head.getX() == world.getWidth() - 1) {
+                availableDirections.remove(Direction.RIGHT);
+            }
+            if (head.getY() == 0) {
+                availableDirections.remove(Direction.UP);
+            }
+            if (head.getY() == world.getHeight() - 1) {
+                availableDirections.remove(Direction.DOWN);
+            }
+
+            List <Direction> avaiblecopy = new ArrayList<>(availableDirections);
+
+
+
+            for (Direction dir : avaiblecopy) {
+                Vector checkifnotObs = new Vector((head.getX() + dir.vec.getX()),(head.getY()) + dir.vec.getY());
+                if (world.isObstacle(checkifnotObs)) {
+                    availableDirections.remove(dir);
+                }
+
+            }
+
+
+
             Map<String, String> response = new HashMap<>();
-            response.put("move", "right");
+            Random rand = new Random();
+            response.put("move", availableDirections.get(rand.nextInt(availableDirections.size())).stringDirection);
             return response;
         }
+
+        private Orm decodeSnake(JsonNode snakeJson) {
+            Orm orm = new Orm();
+            for (JsonNode part : snakeJson.get("body").get("data")) {
+                orm.addPart(new Vector(part.get("x").asInt(), part.get("y").asInt()));
+            }
+            return orm;
+        }
+
 
         /**
          * /end is called by the engine when a game is complete.
