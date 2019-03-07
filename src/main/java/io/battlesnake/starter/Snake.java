@@ -165,8 +165,9 @@ public class Snake {
                 availableDirections.remove(Direction.DOWN);
             }
 
-            List <Direction> avaiblecopy = new ArrayList<>(availableDirections);
-            for (Direction dir : avaiblecopy) {
+            List<Direction> obstacleInDirections = new ArrayList<>();
+            List<Direction> foodInDirections = new ArrayList<>();
+            for (Direction dir : availableDirections) {
 
                 boolean foodInDirection = false;
                 if (clostestFood != null) {
@@ -180,18 +181,34 @@ public class Snake {
                         foodInDirection = true;
                     }
                 }
+                if (foodInDirection)
+                    foodInDirections.add(dir);
 
 
                 Vector checkifnotObs = new Vector((head.getX() + dir.vec.getX()),(head.getY()) + dir.vec.getY());
                 boolean obstacleInDirection = world.isObstacle(checkifnotObs);
-
-                if (obstacleInDirection || (clostestFood != null && !foodInDirection)) {
-                    availableDirections.remove(dir);
-                }
+                if (obstacleInDirection)
+                    obstacleInDirections.add(dir);
 
             }
 
-            Direction finalDirection = availableDirections.get(new Random().nextInt(availableDirections.size()));
+            foodInDirections.removeAll(obstacleInDirections);
+            for (Direction dir : new ArrayList<>(availableDirections)) {
+                if (obstacleInDirections.contains(dir)
+                    || clostestFood != null && !foodInDirections.contains(dir)) {
+                    availableDirections.remove(dir);
+                }
+            }
+
+
+            Direction finalDirection = null;
+            if (!availableDirections.isEmpty()) {
+                finalDirection = availableDirections.get(new Random().nextInt(availableDirections.size()));
+            } else {
+                finalDirection = Direction.values()[new Random().nextInt(Direction.values().length)];
+            }
+
+
 
             Map<String, String> response = new HashMap<>();
 
